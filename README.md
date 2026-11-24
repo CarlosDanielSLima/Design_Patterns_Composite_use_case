@@ -41,3 +41,13 @@ Identificar problemas concretos de design na implementação.
 Localizar e explicar os trechos de código responsáveis pelos problemas 
 identificados, demonstrando suas consequências para a manutenção, evolução ou extensão do software. 
 Explicar por que o padrão escolhido é pertinente aos problemas apresentados.  -->
+
+# 3. Aplicação do padrão Composite
+A versão refatorada está em `src/composite_problem.py`; a implementação original foi mantida em `src/original_problem.py` para permitir a comparação.
+
+- `ComponenteMilitar` define a interface comum para operações sobre um militar ou uma unidade.
+- `Militar` é o componente concreto e também o Composite: mantém somente seus subordinados diretos. Um militar sem subordinados funciona como folha.
+- Operações como movimento e alteração de atributos percorrem a hierarquia recursivamente. Cada militar aplica seu próprio fator de cumprimento, e as operações numéricas retornam o resultado agregado da unidade.
+- `QG` continua responsável pela priorização das ordens, mas deixa de depender de listas de subordinados separadas por patente; a estrutura de comando é percorrida pela própria composição.
+
+Para executar a demonstração, use `python src/composite_problem.py`. Ela cria uma hierarquia General–Coronel–Soldado, emite ordens conflitantes para o General e o Soldado e mostra que prevalece a ordem do superior, com o fator de cumprimento do Soldado aplicado.
