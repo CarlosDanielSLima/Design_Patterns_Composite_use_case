@@ -1,4 +1,5 @@
 from __future__ import annotations
+from random import random
 
 # Constantes com as patentes
 PATENTE_GENERAL = 0
@@ -49,7 +50,7 @@ class QG:
                     militar.set_poder_defesa(v["poder_defesa"][0])
 
                 # Limpa a ordem apos o dia
-                militar.set_order(Order(militar))
+                militar.set_order(Order.random_order(militar, probability=0.25))
 
 class Order:
     def __init__(
@@ -86,6 +87,15 @@ class Order:
             if (valor is None) or (patente > nova_patente):
                 self.variacoes[each_aspecto] = [None, nova_patente]
 
+    @classmethod
+    def random_order(cls, millitary: Millitary, probability: float=0.5) -> Order:
+        order = cls(millitary)
+        for each_col_fator_variacao in order.variacoes.keys():
+            # Probabilidade de probability de alterar o campo nulo
+            if random() <= probability:
+                order.variacoes[each_col_fator_variacao][0] = 50 - random()*100
+        
+        return order
 
 
 class Millitary:
@@ -111,7 +121,7 @@ class Millitary:
         
         self.diferencial_menor = diferencial_menor
         self.superior_imediato = superior_imediato
-        self.order: Order      = Order(self)
+        self.order: Order      = Order.random_order(self, probability=0.25)
         
         self.generais_subordinados = []
         self.coroneis_subordinados = []
@@ -128,137 +138,108 @@ class Millitary:
 
     def _aplicar_fator(self, valor: float, patente: int, diferencial: float) -> float:
         return valor * diferencial if patente == PATENTE_SOLDADO else valor
-        
-    def move(
-        self,
-        x: float,
-        y: float
-    ) -> tuple[float, float]:
-        """ Move a si mesmo e todos os subordinados na direcao
-        do vetor (x, y).
-        Agrega as posicoes de todos os subordinados, obtendo e
-        retornando o centroide ao final.
 
+    def move(self, x: float, y: float) -> None:
+        """ Move a si mesmo e todos os subordinados 
+        na direcao do vetor (x, y).
+        
         Args:
             x (float): Movimento no eixo x.
             y (float): Movimento no eixo y.
-
-        Returns:
-            tuple[float, float]: Posicao (x, y) do centroide das tropas.
         """
         self.pos_x += self._aplicar_fator(x, self.patente, self.diferencial_menor)
         self.pos_y += self._aplicar_fator(y, self.patente, self.diferencial_menor)
 
-        soma_x, soma_y = self.pos_x, self.pos_y
-        subordinados = self._todos_subordinados()
-
-        for sub in subordinados:
+        for sub in self._todos_subordinados():
             sub.pos_x += self._aplicar_fator(x, sub.patente, sub.diferencial_menor)
             sub.pos_y += self._aplicar_fator(y, sub.patente, sub.diferencial_menor)
-            soma_x += sub.pos_x
-            soma_y += sub.pos_y
 
-        total = 1 + len(subordinados)
-        return (soma_x / total, soma_y / total)
-
-    def set_prontidao(
-        self,
-        fator_variacao: float
-    ) -> float:
-        """ Aplica um fator de variacao na prontidao dos subordinados.
+    def set_prontidao(self, fator_variacao: float) -> None:
+        """ Aplica um fator de variacao na prontidao de si e dos subordinados.
         A prontidao resultante de cada um eh limitada entre 0 e 100.
 
         Args:
             fator_variacao (float): Fator de variacao na prontidao.
-
-        Returns:
-            float: Prontidao media das tropas.
         """
         delta = self._aplicar_fator(fator_variacao, self.patente, self.diferencial_menor)
         self.prontidao = max(0.0, min(100.0, self.prontidao + delta))
 
-        soma = self.prontidao
-        subordinados = self._todos_subordinados()
-        for sub in subordinados:
+        for sub in self._todos_subordinados():
             d_sub = self._aplicar_fator(fator_variacao, sub.patente, sub.diferencial_menor)
             sub.prontidao = max(0.0, min(100.0, sub.prontidao + d_sub))
-            soma += sub.prontidao
 
-        return soma / (1 + len(subordinados))
-    
-    def set_saciedade(
-        self,
-        fator_variacao: float
-    ) -> float:
-        """ Aplica um fator de variacao na saciedade dos subordinados.
+    def set_saciedade(self, fator_variacao: float) -> None:
+        """ Aplica um fator de variacao na saciedade de si e dos subordinados.
         A saciedade resultante de cada um eh limitada entre 0 e 100.
 
         Args:
             fator_variacao (float): Fator de variacao na saciedade.
-
-        Returns:
-            float: Saciedade media das tropas.
         """
         delta = self._aplicar_fator(fator_variacao, self.patente, self.diferencial_menor)
         self.saciedade = max(0.0, min(100.0, self.saciedade + delta))
 
-        soma = self.saciedade
-        subordinados = self._todos_subordinados()
-        for sub in subordinados:
+        for sub in self._todos_subordinados():
             d_sub = self._aplicar_fator(fator_variacao, sub.patente, sub.diferencial_menor)
             sub.saciedade = max(0.0, min(100.0, sub.saciedade + d_sub))
-            soma += sub.saciedade
 
-        return soma / (1 + len(subordinados))
-    
-    def set_poder_fogo(
-        self,
-        fator_variacao: float
-    ) -> float:
-        """ Aplica um fator de variacao no poder de fogo dos subordinados.
+    def set_poder_fogo(self, fator_variacao: float) -> None:
+        """ Aplica um fator de variacao no poder de fogo de si e dos subordinados.
         O poder de fogo resultante de cada um eh limitada entre 0 e 100.
 
         Args:
             fator_variacao (float): Fator de variacao no poder de fogo.
-
-        Returns:
-            float: Poder de fogo medio das tropas.
         """
         delta = self._aplicar_fator(fator_variacao, self.patente, self.diferencial_menor)
         self.poder_fogo = max(0.0, min(100.0, self.poder_fogo + delta))
 
-        soma = self.poder_fogo
-        subordinados = self._todos_subordinados()
-        for sub in subordinados:
+        for sub in self._todos_subordinados():
             d_sub = self._aplicar_fator(fator_variacao, sub.patente, sub.diferencial_menor)
             sub.poder_fogo = max(0.0, min(100.0, sub.poder_fogo + d_sub))
-            soma += sub.poder_fogo
 
-        return soma / (1 + len(subordinados))
-
-    def set_poder_defesa(
-        self,
-        fator_variacao: float
-    ) -> float:
-        """ Aplica um fator de variacao no poder de defesa dos subordinados.
+    def set_poder_defesa(self, fator_variacao: float) -> None:
+        """ Aplica um fator de variacao no poder de defesa de si e dos subordinados.
         O poder de defesa resultante de cada um eh limitada entre 0 e 100.
 
         Args:
             fator_variacao (float): Fator de variacao no poder de defesa.
-
-        Returns:
-            float: Poder de defesa medio das tropas.
         """
         delta = self._aplicar_fator(fator_variacao, self.patente, self.diferencial_menor)
         self.poder_defesa = max(0.0, min(100.0, self.poder_defesa + delta))
 
-        soma = self.poder_defesa
-        subordinados = self._todos_subordinados()
-        for sub in subordinados:
+        for sub in self._todos_subordinados():
             d_sub = self._aplicar_fator(fator_variacao, sub.patente, sub.diferencial_menor)
             sub.poder_defesa = max(0.0, min(100.0, sub.poder_defesa + d_sub))
-            soma += sub.poder_defesa
 
+    def get_posicao(self) -> tuple[float, float]:
+        """Retorna a posicao (x, y) do centroide de si e dos subordinados."""
+        subordinados = self._todos_subordinados()
+        soma_x = self.pos_x + sum(sub.pos_x for sub in subordinados)
+        soma_y = self.pos_y + sum(sub.pos_y for sub in subordinados)
+        total = 1 + len(subordinados)
+        return (soma_x / total, soma_y / total)
+
+    def get_prontidao(self) -> float:
+        """Retorna a prontidao media de si e dos subordinados."""
+        subordinados = self._todos_subordinados()
+        soma = self.prontidao + sum(sub.prontidao for sub in subordinados)
+        return soma / (1 + len(subordinados))
+
+    def get_saciedade(self) -> float:
+        """Retorna a saciedade media de si e dos subordinados."""
+        subordinados = self._todos_subordinados()
+        soma = self.saciedade + sum(sub.saciedade for sub in subordinados)
+        return soma / (1 + len(subordinados))
+
+    def get_poder_fogo(self) -> float:
+        """Retorna o poder de fogo medio de si e dos subordinados."""
+        subordinados = self._todos_subordinados()
+        soma = self.poder_fogo + sum(sub.poder_fogo for sub in subordinados)
+        return soma / (1 + len(subordinados))
+
+    def get_poder_defesa(self) -> float:
+        """Retorna o poder de defesa medio de si e dos subordinados."""
+        subordinados = self._todos_subordinados()
+        soma = self.poder_defesa + sum(sub.poder_defesa for sub in subordinados)
         return soma / (1 + len(subordinados))
 
     def add_subordinado(
