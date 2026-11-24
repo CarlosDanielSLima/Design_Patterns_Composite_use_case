@@ -25,7 +25,8 @@ class Graphic(ABC):
         pass
 
     @abstractmethod
-    def draw(self):
+    def draw(self, nivel=0):
+        # 'nivel' serve apenas para indentar a saída e mostrar a árvore.
         pass
 
 
@@ -44,8 +45,8 @@ class Dot(Graphic):
         self.x += x
         self.y += y
 
-    def draw(self):
-        print(f"Ponto em ({self.x}, {self.y})")
+    def draw(self, nivel=0):
+        print("  " * nivel + f"Ponto em ({self.x}, {self.y})")
 
 
 # =============================================================================
@@ -58,8 +59,8 @@ class Circle(Dot):
         super().__init__(x, y)
         self.radius = radius
 
-    def draw(self):
-        print(f"Círculo em ({self.x}, {self.y}) com raio {self.radius}")
+    def draw(self, nivel=0):
+        print("  " * nivel + f"Círculo em ({self.x}, {self.y}) com raio {self.radius}")
 
 
 # =============================================================================
@@ -88,9 +89,65 @@ class CompoundGraphic(Graphic):
         for child in self.children:
             child.move(x, y)
 
-    def draw(self):
+    def draw(self, nivel=0):
         # Mesma ideia: o composto desenha a si mesmo desenhando seus filhos.
-        print("Grupo: [")
+        print("  " * nivel + "Grupo:")
         for child in self.children:
-            child.draw()
-        print("]")
+            child.draw(nivel + 1)
+
+
+# =============================================================================
+# CLIENT (cliente)
+# Trabalha SOMENTE com a interface Graphic. Não precisa saber se está movendo
+# um ponto, um círculo ou um grupo inteiro de formas.
+# =============================================================================
+class ImageEditor:
+
+    def __init__(self):
+        # A "tela" do editor é ela mesma um composto (raiz da árvore).
+        self.all = CompoundGraphic()
+
+    def load(self):
+        self.all.add(Dot(1, 2))
+        self.all.add(Circle(5, 3, 10))
+
+    def group_selected(self, components):
+        # Junta vários Graphics em um novo grupo. Como o grupo também é um
+        # Graphic, ele pode entrar na árvore no lugar dos itens originais.
+        group = CompoundGraphic()
+        for component in components:
+            group.add(component)
+            self.all.remove(component)
+        self.all.add(group)
+        return group
+
+
+if __name__ == "__main__":
+    editor = ImageEditor()
+    editor.load()
+
+    print("== Estado inicial ==")
+    editor.all.draw()
+
+    # Seleciona as duas formas carregadas e agrupa.
+    dot, circle = editor.all.children
+    grupo = editor.group_selected([dot, circle])
+
+    # Composto dentro de composto: adiciona um novo ponto fora do grupo.
+    editor.all.add(Dot(0, 0))
+
+    print("\n== Após agrupar e adicionar um ponto ==")
+    editor.all.draw()
+
+    # UNIFORMIDADE: a MESMA chamada move() funciona para folha e para grupo.
+    print("\n== Movendo só o grupo em (+10, +10) ==")
+    grupo.move(10, 10)
+    editor.all.draw()
+
+    print("\n== Movendo só a folha (ponto) em (-1, -1) ==")
+    dot.move(-1, -1)
+    editor.all.draw()
+
+    print("\n== Movendo TUDO (raiz) em (+100, 0) ==")
+    editor.all.move(100, 0)
+    editor.all.draw()
