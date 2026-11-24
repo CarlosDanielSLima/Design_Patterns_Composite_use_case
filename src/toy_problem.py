@@ -60,3 +60,37 @@ class Circle(Dot):
 
     def draw(self):
         print(f"Círculo em ({self.x}, {self.y}) com raio {self.radius}")
+
+
+# =============================================================================
+# COMPOSITE (composto)
+# Também é um Graphic, mas guarda uma lista de filhos (folhas OU outros
+# compostos). Ele não faz o trabalho sozinho: DELEGA para os filhos.
+# =============================================================================
+class CompoundGraphic(Graphic):
+
+    def __init__(self):
+        # Os filhos são referenciados pela interface Graphic, então o composto
+        # não sabe (nem precisa saber) se cada filho é folha ou outro composto.
+        self.children = []
+
+    # Métodos de gerenciamento de filhos (exclusivos do Composite).
+    def add(self, child: Graphic):
+        self.children.append(child)
+
+    def remove(self, child: Graphic):
+        self.children.remove(child)
+
+    def move(self, x, y):
+        # DELEGAÇÃO RECURSIVA: repassa a operação para cada filho.
+        # Se o filho for outro CompoundGraphic, ele repete o processo,
+        # percorrendo a árvore inteira até chegar nas folhas.
+        for child in self.children:
+            child.move(x, y)
+
+    def draw(self):
+        # Mesma ideia: o composto desenha a si mesmo desenhando seus filhos.
+        print("Grupo: [")
+        for child in self.children:
+            child.draw()
+        print("]")
