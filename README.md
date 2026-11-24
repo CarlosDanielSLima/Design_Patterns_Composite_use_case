@@ -22,3 +22,22 @@ Os militares podem possuir as seguintes patentes:
 - Coronel;
 - Capitão;
 - Soldado.
+
+# 1. Implementação Original
+Ignorando o padrão Composite, implementamos uma classe Militar. A patente $i$, com $i \in (0, 1, 2)$, possui uma lista para cada patente subordinada $j$, $j \in [i+1, n]$ (A patente Soldado, $i=3$, não possui subordinados).
+
+Cada vez que um militar adiciona um subordinado, passa para o seu superior imediato e adiciona esse novo subordinado à lista de subordinados da respectiva patente no objeto do superior.
+
+Cada ordem executada pelo militar é passada para cada uma das listas, sendo executada por cada patente de subordinados, agregando os resultados ao final.
+
+Os soldados, por não terem nem experiência nem subordinados, são mais desleixados para cumprir regras. Por isso, é aplicado um fator de redução à qualquer ordem recebida (diminuir a variação no movimento ou na saciedade, por exemplo).
+
+Para viabilizar a solução de conflitos de ordens entre superiores, a classe QG, que realiza a criação e alocação de militares, além de passar os dias, também irá garantir a execução das ordens seguindo a hieráriquia: Cada militar irá carregar a ordem que irá executar no dia, sobrescrevendo ordens conflitantes dos subordinados e executando a sua própria. Portanto, para garantir que a priorização de ordens dos militares de mais alta patente, é necessário que esses sejam os primeiros a executar suas ordens, sobrescrevendo ordens conflitantes dos subordinados.
+
+<!-- O código está completo, funcional e suficientemente elaborado para evidenciar problemas de design que justifiquem a aplicação do padrão. -->
+<!-- Explicar o contexto, o funcionamento e as responsabilidades dos principais componentes. 
+Executar o programa, demonstrando seu funcionamento. 
+Identificar problemas concretos de design na implementação. 
+Localizar e explicar os trechos de código responsáveis pelos problemas 
+identificados, demonstrando suas consequências para a manutenção, evolução ou extensão do software. 
+Explicar por que o padrão escolhido é pertinente aos problemas apresentados.  -->
