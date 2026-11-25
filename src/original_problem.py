@@ -1,5 +1,6 @@
 from __future__ import annotations
 from random import random
+from copy import deepcopy
 
 # Constantes com as patentes
 PATENTE_GENERAL = 0
@@ -16,7 +17,8 @@ class QG:
         if militar.superior_imediato is not None:
             militar.superior_imediato.add_subordinado(militar.patente, militar)
 
-    def executar_dia(self) -> None:
+    def executar_dia(self) -> list:
+        old_orders = []
         # Resolve conflitos de ordens de cima para baixo (patente 0 -> 1 -> 2 -> 3)
         for patente_atual in range(4):
             for militar in self.militares:
@@ -49,8 +51,11 @@ class QG:
                 if v["poder_defesa"][0] is not None:
                     militar.set_poder_defesa(v["poder_defesa"][0])
 
+                old_orders.append(deepcopy(militar))
                 # Limpa a ordem apos o dia
                 militar.set_order(Order.random_order(militar, probability=0.25))
+        
+        return old_orders
 
 class Order:
     def __init__(
@@ -298,4 +303,44 @@ class Millitary:
     ) -> None:
         self.order = order
     
-    
+
+
+def print_arvore_ordens(militares: list[Millitary]) -> None:
+    conjunto_militares = set(militares)
+    filhos: dict[Millitary | None, list[Millitary]] = {}
+
+    for militar in militares:
+        superior = militar.superior_imediato
+        chave_pai = superior if superior in conjunto_militares else None
+        filhos.setdefault(chave_pai, []).append(militar)
+
+    def _formatar_variacoes(ordem: Order) -> str:
+        itens = [
+            f"{aspecto} = {valor:.2f}" if isinstance(valor, float) else f"{aspecto} = {valor}"
+            for aspecto, (valor, _) in ordem.variacoes.items()
+            if valor is not None
+        ]
+        return "{" + ", ".join(itens) + "}"
+
+    def _print_no(militar: Millitary, prefixo: str = "", eh_raiz: bool = True, eh_ultimo: bool = True) -> None:
+        texto = f"{militar.patente} {_formatar_variacoes(militar.order)}"
+
+        if eh_raiz:
+            print(texto)
+            novo_prefixo = ""
+        else:
+            conector = "└───── " if eh_ultimo else "├───── "
+            print(f"{prefixo}{conector}{texto}")
+            novo_prefixo = prefixo + ("       " if eh_ultimo else "│      ")
+
+        subordinados = filhos.get(militar, [])
+        for i, sub in enumerate(subordinados):
+            _print_no(
+                sub,
+                prefixo=novo_prefixo,
+                eh_raiz=False,
+                eh_ultimo=(i == len(subordinados) - 1),
+            )
+
+    for raiz in filhos.get(None, []):
+        _print_no(raiz)
